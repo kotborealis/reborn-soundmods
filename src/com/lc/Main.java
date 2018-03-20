@@ -22,6 +22,7 @@ public class Main {
         base_vsndevts = new String(Files.readAllBytes(Paths.get("./base.vsndevts")), charset);
 
         init_dota2_path();
+        check_workshop_tools();
         create_dirs();
         generate_vsndevts();
         resourcecompiler();
@@ -53,6 +54,14 @@ public class Main {
         soundmods_content_path = Paths.get(content_path, "soundmods_content").toString() + File.separator;
 
         System.out.println("Found Dota2: " + dota2_path + "\n");
+    }
+
+    private static void check_workshop_tools(){
+        String bin = Paths.get(game_path, "bin", "win64", "resourcecompiler.exe").toString();
+        if(!new File(bin).exists()){
+            System.out.println("Unable to find resourcecompiler.exe; install Dota 2 workshop tools --- https://i.imgur.com/pAXSp3H.png");
+            System.exit(1);
+        }
     }
 
 
