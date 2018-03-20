@@ -1,32 +1,26 @@
 package com.lc;
 
-import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
 
 public class Main {
 
     static private Charset charset = StandardCharsets.UTF_8;
-    static private String base_vsndevts;
 
     static private String game_path;
     static private String soundmods_content_path;
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        base_vsndevts = new String(Files.readAllBytes(Paths.get("./base.vsndevts")), charset);
-
         init_dota2_path();
         check_workshop_tools();
         create_dirs();
-        generate_vsndevts();
         resourcecompiler();
-        gameinfo();
+        update_gameinfo();
         create_vpk();
     }
 
@@ -102,7 +96,7 @@ public class Main {
         System.out.println();
     }
 
-    private static void gameinfo() throws IOException {
+    private static void update_gameinfo() throws IOException {
         System.out.println("Updating gameinfo.gi\n");
 
         String addon_str = "\t\t\tGame\t\t\t\tsoundmods";
@@ -135,40 +129,5 @@ public class Main {
 
         new File(output).delete();
         new File(output_vpk).renameTo(new File(output));
-    }
-
-    private static void generate_vsndevts() throws IOException {
-        System.out.println("Generating vsndevts");
-        Files.walk(Paths.get(soundmods_content_path, "sounds"))
-                .filter(Files::isRegularFile)
-                .forEach(Main::generate_vsndevts);
-        System.out.println();
-    }
-
-    private static void generate_vsndevts(Path path) {
-        String r_path = Paths.get(soundmods_content_path).relativize(path).toString();
-        String name = r_path.substring(0, r_path.lastIndexOf('.'));
-        String ext  = r_path.substring(r_path.lastIndexOf('.'));
-
-        System.out.println("\tGenerating vsndevts (" + r_path + ")");
-
-        if(!Objects.equals(ext, ".wav")){
-            System.out.println("\t\tSkipping non-wav file: " + r_path);
-            return;
-        }
-
-        Path vsndevts_path = Paths.get(soundmods_content_path, name + ".vsndevts");
-        if(new File(vsndevts_path.toString()).exists()){
-            System.out.println("\t\tSkipping existing vsndevts file: " + vsndevts_path);
-            return;
-        }
-
-        String content = base_vsndevts;
-        content = content.replace("$$PATH$$", r_path.replaceAll("\\\\", "/"));
-        try {
-            Files.write(vsndevts_path, content.getBytes(charset));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 }
