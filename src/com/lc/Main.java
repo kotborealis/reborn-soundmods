@@ -1,9 +1,7 @@
 package com.lc;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import javax.net.ssl.SSLContext;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -15,11 +13,17 @@ public class Main {
 
     static private Charset charset = StandardCharsets.UTF_8;
     static private String base_vsndevts;
+    static private String dota2_path;
+
+    static private String game_path;
+    static private String content_path;
+    static private String soundmods_content_path;
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
         base_vsndevts = new String(Files.readAllBytes(Paths.get("./base.vsndevts")), charset);
 
+        init_dota2_path();
         create_dirs();
         generate_vsndevts();
         resourcecompiler();
@@ -27,13 +31,30 @@ public class Main {
         create_vpk();
     }
 
-    private static String dota2_path(){
-        // TODO
-        return Paths.get("D:\\SteamLibrary\\steamapps\\common\\dota 2 beta").toString();
+    private static void init_dota2_path() throws IOException, InterruptedException {
+        Process process = process = Runtime.getRuntime().exec(
+                "reg QUERY \"HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Steam App 570\" /v InstallLocation"
+        );
+
+        ByteArrayOutputStream sstdout = new ByteArrayOutputStream();
+        copy(process.getInputStream(), sstdout);
+
+        String stdout = new String(sstdout.toByteArray(), charset);
+        process.waitFor();
+
+        if(stdout.split("\n").length < 4){
+            System.out.println("Unable to find Dota2 path.");
+            System.exit(1);
+        }
+
+
+        dota2_path = stdout.split("\n")[2].split("REG_SZ")[1].trim();
+        game_path = Paths.get(dota2_path, "game").toString();
+        content_path = Paths.get(dota2_path, "content").toString();
+        soundmods_content_path = Paths.get(content_path, "soundmods_content").toString() + File.separator;
+
+        System.out.println("Found Dota2: " + dota2_path + "\n");
     }
-    static private String game_path = Paths.get(dota2_path(), "game").toString();
-    static private String content_path = Paths.get(dota2_path(), "content").toString();
-    static private String soundmods_content_path = Paths.get(content_path, "soundmods_content").toString() + File.separator;
 
 
     private static void create_dirs(){
@@ -62,7 +83,6 @@ public class Main {
 
     private static void resourcecompiler() throws IOException, InterruptedException {
         String input = soundmods_content_path + "*";
-        System.out.println(soundmods_content_path + "*");
         String bin = Paths.get(game_path, "bin", "win64", "resourcecompiler.exe").toString();
         Process process = Runtime.getRuntime().exec(
                 "\"" + bin + "\"" +
@@ -75,6 +95,8 @@ public class Main {
     }
 
     private static void gameinfo() throws IOException {
+        System.out.println("Updating gameinfo.gi\n");
+
         String addon_str = "\t\t\tGame\t\t\t\tsoundmods";
 
         Path path = Paths.get(game_path, "dota", "gameinfo.gi");
@@ -89,6 +111,8 @@ public class Main {
     }
 
     private static void create_vpk() throws IOException, InterruptedException {
+        System.out.println("Creating vpk\n");
+
         String input = Paths.get(game_path, "soundmods_content").toString();
         String output_vpk = Paths.get(game_path, "soundmods_content.vpk").toString();
         String output = Paths.get(game_path, "soundmods", "pak01_dir.vpk").toString();
@@ -106,6 +130,7 @@ public class Main {
     }
 
     private static void generate_vsndevts() throws IOException {
+        System.out.println("Generating vsndevts");
         Files.walk(Paths.get(soundmods_content_path, "sounds"))
                 .filter(Files::isRegularFile)
                 .forEach(Main::generate_vsndevts);
@@ -117,14 +142,16 @@ public class Main {
         String name = r_path.substring(0, r_path.lastIndexOf('.'));
         String ext  = r_path.substring(r_path.lastIndexOf('.'));
 
+        System.out.println("\tGenerating vsndevts (" + r_path + ")");
+
         if(!Objects.equals(ext, ".wav")){
-            System.out.println("Skipping non-wav file: " + r_path);
+            System.out.println("\t\tSkipping non-wav file: " + r_path);
             return;
         }
 
         Path vsndevts_path = Paths.get(soundmods_content_path, name + ".vsndevts");
         if(new File(vsndevts_path.toString()).exists()){
-            System.out.println("Skipping existing vsndevts file: " + vsndevts_path);
+            System.out.println("\t\tSkipping existing vsndevts file: " + vsndevts_path);
             return;
         }
 
