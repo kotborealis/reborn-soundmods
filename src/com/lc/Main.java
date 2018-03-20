@@ -6,6 +6,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.Objects;
 
 public class Main {
 
@@ -19,8 +21,9 @@ public class Main {
         init_dota2_path();
         check_workshop_tools();
         create_dirs();
-        resourcecompiler();
         update_gameinfo();
+        resourcecompiler();
+        copy_compiled_files();
         create_vpk();
     }
 
@@ -110,6 +113,15 @@ public class Main {
             );
         }
         Files.write(path, content.getBytes(charset));
+    }
+
+    private static void copy_compiled_files() throws IOException {
+        System.out.println("Copying already compiled files");
+        CopyFiles.copy(
+                new File(soundmods_content_path),
+                new File(Paths.get(game_path, "soundmods_content").toString())
+        );
+        System.out.println();
     }
 
     private static void create_vpk() throws IOException, InterruptedException {
