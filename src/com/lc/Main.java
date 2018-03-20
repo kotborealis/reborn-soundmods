@@ -13,10 +13,8 @@ public class Main {
 
     static private Charset charset = StandardCharsets.UTF_8;
     static private String base_vsndevts;
-    static private String dota2_path;
 
     static private String game_path;
-    static private String content_path;
     static private String soundmods_content_path;
 
 
@@ -48,9 +46,10 @@ public class Main {
         }
 
 
-        dota2_path = stdout.split("\n")[2].split("REG_SZ")[1].trim();
+        String dota2_path = stdout.split("\n")[2].split("REG_SZ")[1].trim();
         game_path = Paths.get(dota2_path, "game").toString();
-        content_path = Paths.get(dota2_path, "content").toString();
+
+        String content_path = Paths.get(dota2_path, "content").toString();
         soundmods_content_path = Paths.get(content_path, "soundmods_content").toString() + File.separator;
 
         System.out.println("Found Dota2: " + dota2_path + "\n");
